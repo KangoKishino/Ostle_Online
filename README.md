@@ -19,3 +19,8 @@ $ docker-compose exec web sh
 $ cd app
 $ npm run serve
 ```
+
+### アクセス
+```bash
+http://localhost:8080/
+```
