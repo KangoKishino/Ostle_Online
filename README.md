@@ -5,13 +5,8 @@
 ### envファイル作成
 
 ```bash
-/* Windows */
-$ ren app.env.example app.env
-$ ren mysql/mysql.env.example mysql/mysql.env
-
-/* Mac */
-$ mv app.env.example app.env
-$ mv mysql/mysql.env.example mysql/mysql.env
+$ cp app.env.example app.env
+$ cp mysql/mysql.env.example mysql/mysql.env
 ```
 
 ### コンテナ起動
