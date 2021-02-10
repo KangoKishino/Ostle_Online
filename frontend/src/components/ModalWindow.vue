@@ -1,17 +1,17 @@
 <template>
-    <transition name="modal" appear>
-        <div class="modal-overlay"  @click.self="$emit('close')">
-            <div class="modal-window">
-                <div class="modal-content">
-                    <slot/>
-                </div>
-                <footer class="modal-footer">
-                    <slot name="footer">
-                    </slot>
-                </footer>
-            </div>
+  <transition name="modal" appear>
+    <div class="modal-overlay"  @click.self="$emit('close')">
+      <div class="modal-window">
+        <div class="modal-content">
+          <slot/>
         </div>
-    </transition>
+        <footer class="modal-footer">
+          <slot name="footer">
+          </slot>
+        </footer>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <style scoped>

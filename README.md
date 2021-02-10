@@ -2,6 +2,13 @@
 
 ## Project setup
 
+### envファイル作成
+
+```bash
+$ cp app.env.example app.env
+$ cp mysql/mysql.env.example mysql/mysql.env
+```
+
 ### コンテナ起動
 
 ```bash

@@ -12,6 +12,7 @@
           </div>
         </div>
       </div>
+      <p v-if="isUpdateError" class="error">ページの更新に失敗しました</p>
       <button type="button" @click="openMakeRoom" class="btn btn-dark ml-2 mt-3 right"><Plus />部屋作成</button>
     </div>
       <ModalWindow @close="closeMakeRoom()" v-show="showMakeRoom">
@@ -68,17 +69,17 @@ export default {
       enterName: '',
       isRoom: false,
       isRoomError: false,
+      isUpdateError: false,
       socket: io('http://localhost:3000')
     }
   },
   created() {
-    this.roomList = this.$store.getters.room
-    const that = this
-    this.$store.dispatch('fetchRoom', { that: that })
+    this.roomList = this.$store.getters.rooms
+    this.$store.dispatch('fetchRoom')
   },
   computed: {
     boardName() {
-      return this.$store.getters.room
+      return this.$store.getters.rooms
     }
   },
   methods: {
@@ -97,11 +98,9 @@ export default {
       this.enterName = ''
     },
     makeRoom() {
-      const that = this
       this.$store.dispatch('makeRoom', {
         roomName: this.roomName,
-        roomPassword: this.roomPassword,
-        that: that
+        roomPassword: this.roomPassword
       })
         .then(() => {
           this.roomName = ''
@@ -114,14 +113,16 @@ export default {
     }
   },
   mounted() {
-    const that = this
     this.$store.subscribe(mutation => {
-      if(mutation.type === 'fetchRoom') {
-        this.roomList = this.$store.getters.room
+      if(mutation.type === 'setRoom') {
+        this.roomList = this.$store.getters.rooms
       }
     })
-    this.socket.on('UPDATE_ROOM',function(){
-      that.$store.dispatch('fetchRoom', { that: that })
+    this.socket.on('UPDATE_ROOM', () => {
+      this.$store.dispatch('fetchRoom')
+        .catch(() => {
+          this.isUpdateError = true;
+        })
     })
   },
 }

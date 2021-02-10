@@ -1,39 +1,47 @@
+import Vue from 'vue'
+import axios from 'axios'
+Vue.$axios = axios;
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:3000')
+
 export default {
-    state() {
-        return {
-            room: []
-        }
-    },
-    mutations: {
-        fetchRoom(state, room) {
-            state.room = room
-        }
-    },
-    getters: {
-        room(state) {
-            return state.room
-        }
-    },
-    actions: {
-        fetchRoom({ commit }, { that }) {
-            that.$axios.post('/fetchRoom')
-                .then((response) => {
-                    commit('fetchRoom', response.data.room);
-                })
-                .catch(() => {
-                    console.log('error')
-                });
-        },
-        makeRoom({ commit }, { roomName, roomPassword, that }) {
-            const data = { name: roomName, password: roomPassword}
-            return that.$axios.post('/makeRoom', data)
-                .then((response) => {
-                    that.socket.emit('UPDATE_ROOM',);
-                    commit('fetchRoom', response.data.room);
-                })
-                .catch(() => {
-                    return Promise.reject()
-                });
-        }
-    }
+	state() {
+		return {
+			rooms: []
+		}
+	},
+	mutations: {
+		setRoom(state, rooms) {
+			const newRooms = rooms.concat();
+			state.rooms = newRooms
+		}
+	},
+	getters: {
+		rooms(state) {
+			return state.rooms
+		}
+	},
+	actions: {
+		fetchRoom({ commit }) {
+			Vue.$axios.post('/fetchRoom')
+				.then((response) => {
+					commit('setRoom', response.data.rooms);
+				})
+				.catch(() => {
+					return Promise.reject()
+				});
+		},
+		makeRoom({ commit }, { roomName, roomPassword }) {
+			const data = { name: roomName, password: roomPassword }
+			Vue.$axios.post('/makeRoom', data)
+				.then((response) => {
+					socket.emit('UPDATE_ROOM');
+					commit('setRoom', response.data.rooms);
+				})
+				.catch(() => {
+					return Promise.reject()
+				});
+		}
+  }
 }
