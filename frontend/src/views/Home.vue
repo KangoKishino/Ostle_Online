@@ -114,7 +114,7 @@ export default {
   },
   mounted() {
     this.$store.subscribe(mutation => {
-      if(mutation.type === 'setRoom') {
+      if(mutation.type === 'setRooms') {
         this.roomList = this.$store.getters.rooms
       }
     })
