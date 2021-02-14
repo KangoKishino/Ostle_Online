@@ -11,8 +11,7 @@ export default {
   },
   mutations: {
     setRooms(state, rooms) {
-      const newRooms = rooms.concat();
-      state.rooms = newRooms
+      state.rooms = rooms.concat()
     }
   },
   getters: {
