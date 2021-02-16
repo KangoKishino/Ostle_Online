@@ -4,11 +4,12 @@ services:
     image: frontend
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: frontend/Dockerfile
     ports:
       - 8080:8080
     volumes:
       - ./frontend:/app:cached
+      - /app/node_modules
     stdin_open: true
     tty: true
 
@@ -26,22 +27,26 @@ services:
      - default
 
  app:
-   image: node:12
-   env_file: ./app.env
-   environment:
-     - TZ=Asia/Tokyo
-     - DEBUG=app:*
-   tty: true
-   ports:
-     - '3000:3000'
-   volumes:
-     - ./app:/app
-   working_dir: /app
-   command: npm run watch
-   networks:
-     - default
-   depends_on:
-     - mysql
+    image: node:12
+    env_file: ./app.env
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    environment:
+      - TZ=Asia/Tokyo
+      - DEBUG=app:*
+    tty: true
+    stdin_open: true
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    working_dir: /app
+    networks:
+      - default
+    depends_on:
+      - mysql
 networks:
  default:
 volumes:

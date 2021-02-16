@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY ./frontend/package*.json ./
 
+RUN npm install -g @vue/cli
+
 RUN npm install
 
 COPY . /frontend/
