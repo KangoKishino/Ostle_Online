@@ -27,7 +27,7 @@
             <td><div><input type="password" v-model="roomPassword"></div></td>
           </tr>
         </table>
-        <p v-if="isRoomError" class="error">この部屋名は既に利用されています</p>
+        <p v-if="this.$store.getters.errorMessage" class="error">{{ this.$store.getters.errorMessage }}</p>
         <template slot="footer">
           <button class="btn btn-dark" @click="makeRoom()">作成</button>
           <button class="btn btn-outline-dark" @click="closeMakeRoom()">閉じる</button>
@@ -68,7 +68,6 @@ export default {
       roomPassword: '',
       enterName: '',
       isRoom: false,
-      isRoomError: false,
       isUpdateError: false,
       socket: io('http://localhost:3000')
     }
@@ -106,9 +105,6 @@ export default {
           this.roomName = ''
           this.roomPassword = ''
           this.closeMakeRoom()
-        })
-        .catch(() => {
-          this.isRoomError = true
         })
     }
   },

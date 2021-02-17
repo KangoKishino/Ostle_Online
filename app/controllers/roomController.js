@@ -3,6 +3,7 @@
 const db = require('../models');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const { validationResult } = require('express-validator');
 
 exports.fetchRoom = async (req, res) => {
 	const rooms = await db.Rooms.findAll({
@@ -19,6 +20,12 @@ exports.fetchRoom = async (req, res) => {
 };
 
 exports.makeRoom = (req, res, next) => {
+	const errors = validationResult(req);
+	if(!errors.isEmpty()) {
+		return res.send({
+			error: errors.array()[0].msg
+		});
+	}
 	const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
 	const newRoom = db.Rooms.build({
 		name: req.body.name,
@@ -30,6 +37,8 @@ exports.makeRoom = (req, res, next) => {
 			next();
 		})
 		.catch(() => {
-			res.status(400).json({ error: 'Email already exists!' });
+			res.send({
+				error: 'この部屋名は既に利用されています'
+			});
 		})
 };

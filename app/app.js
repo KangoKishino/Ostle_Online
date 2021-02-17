@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
 const roomController = require('./controllers/roomController');
+const validateController = require('./controllers/validateController');
 const methodOverride = require("method-override");
 
 const app = express();
@@ -27,6 +28,6 @@ app.use(cookieParser());
 app.use(cors());
 
 app.post('/fetchRoom', roomController.fetchRoom);
-app.post('/makeRoom', roomController.makeRoom, roomController.fetchRoom);
+app.post('/makeRoom', validateController.validateRoom, roomController.makeRoom, roomController.fetchRoom);
 
 module.exports = app;
