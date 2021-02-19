@@ -20,11 +20,21 @@
         <table>
           <tr class="py-3">
             <td class="width200 py-3">部屋名</td>
-            <td><div><input type="text" v-model="roomName"></div></td>
+            <td>
+              <ValidationProvider rules="max:128" v-slot="{ errors }">
+                <input type="text" v-model="roomName" name="name" />
+                <p class="error">{{ errors[0] }}</p>
+              </ValidationProvider>
+            </td>
           </tr>
           <tr>
             <td class="py-3">パスワード</td>
-            <td><div><input type="password" v-model="roomPassword"></div></td>
+            <td>
+              <ValidationProvider rules="max:128" v-slot="{ errors }">
+                <input type="password" v-model="roomPassword" name="password" />
+                <p class="error">{{ errors[0] }}</p>
+              </ValidationProvider>
+            </td>
           </tr>
         </table>
         <p v-if="this.$store.getters.errorMessage" class="error">{{ this.$store.getters.errorMessage }}</p>
@@ -52,12 +62,20 @@
 <script>
 import Plus from 'vue-material-design-icons/Plus.vue'
 import ModalWindow from '../components/ModalWindow'
-import io from 'socket.io-client';
+import io from 'socket.io-client'
+import { ValidationProvider, extend } from 'vee-validate'
+import { max } from 'vee-validate/dist/rules'
+
+extend('max', {
+  ...max,
+  message: '128文字以内で入力してください'
+});
 
 export default {
   components: {
     ModalWindow,
-    Plus
+    Plus,
+    ValidationProvider
   },
   data() {
     return {
@@ -95,6 +113,11 @@ export default {
     closeEnterRoom() {
       this.showEnterRoom = false
       this.enterName = ''
+    },
+    status(validation) {
+      return {
+        error: validation.$error
+      }
     },
     makeRoom() {
       this.$store.dispatch('makeRoom', {
