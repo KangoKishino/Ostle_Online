@@ -114,11 +114,6 @@ export default {
       this.showEnterRoom = false
       this.enterName = ''
     },
-    status(validation) {
-      return {
-        error: validation.$error
-      }
-    },
     makeRoom() {
       this.$store.dispatch('makeRoom', {
         roomName: this.roomName,
