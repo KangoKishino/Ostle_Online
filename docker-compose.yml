@@ -1,6 +1,6 @@
-version: '3'
+version: "3"
 services:
- web:
+  web:
     image: frontend
     build:
       context: .
@@ -13,20 +13,20 @@ services:
     stdin_open: true
     tty: true
 
- mysql:
-   image: mysql:5.7
-   env_file: ./mysql/mysql.env
-   environment:
-     - TZ=Asia/Tokyo
-   ports:
-     - '3306:3306'
-   volumes:
-     - ./mysql/conf:/etc/mysql/conf.d/:ro
-     - mysqldata:/var/lib/mysql
-   networks:
-     - default
+  mysql:
+    image: mysql:5.7
+    env_file: ./mysql/mysql.env
+    environment:
+      - TZ=Asia/Tokyo
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/conf:/etc/mysql/conf.d/:ro
+      - mysqldata:/var/lib/mysql
+    networks:
+      - default
 
- app:
+  app:
     image: node:12
     env_file: ./app.env
     build:
@@ -38,7 +38,7 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - ./app:/app
       - /app/node_modules
@@ -48,6 +48,6 @@ services:
     depends_on:
       - mysql
 networks:
- default:
+  default:
 volumes:
- mysqldata:
+  mysqldata:

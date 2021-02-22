@@ -2,7 +2,7 @@
   <div id="app">
     <h3 class="mt-3">Ostle Online</h3>
     <div id="body">
-      <router-view/>
+      <router-view />
     </div>
   </div>
 </template>

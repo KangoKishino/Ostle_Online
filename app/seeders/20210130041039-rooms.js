@@ -18,7 +18,7 @@ module.exports = {
           password: '',
           createdAt: new Date(),
           updatedAt: new Date(),
-        }
+        },
       ],
       {}
     );
