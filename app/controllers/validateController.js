@@ -13,3 +13,9 @@ exports.validateRoom = [
     .isLength({ max: 128 })
     .withMessage('パスワードの最大桁数は128文字です'),
 ];
+
+exports.validateMessage = [
+  check('message')
+    .isLength({ max: 160 })
+    .withMessage('最大文字数は160文字です'),
+];

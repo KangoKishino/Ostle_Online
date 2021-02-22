@@ -15,6 +15,27 @@ module.exports = {
       password: {
         type: Sequelize.STRING,
       },
+      full_capacity: {
+        allowNull: false,
+        type: Sequelize.TINYINT,
+      },
+      status: {
+        allowNull: false,
+        type: Sequelize.STRING,
+      },
+      play_first: {
+        allowNull: false,
+        type: Sequelize.STRING,
+      },
+      time: {
+        type: Sequelize.TINYINT,
+      },
+      host_time: {
+        type: Sequelize.TIME,
+      },
+      guest_time: {
+        type: Sequelize.TIME,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

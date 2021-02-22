@@ -31,11 +31,23 @@ const io = require('socket.io')(server, {
   cors: true,
   origins: 'http://localhost:8080',
 });
-io.on('connection', function(socket) {
+io.on('connection', socket => {
   console.log('connected!!!');
-  socket.on('UPDATE_ROOM', function() {
+  socket.on('UPDATE_ROOM', id => {
     console.log('room updated!!!');
-    io.emit('UPDATE_ROOM');
+    io.emit('UPDATE_ROOM', id);
+  });
+  socket.on('ENTER_ROOM', () => {
+    console.log('guest enter!!!');
+    io.emit('ENTER_ROOM');
+  });
+  socket.on('SEND_MESSAGE', () => {
+    console.log('send message!!!');
+    io.emit('SEND_MESSAGE');
+  });
+  socket.on('DELETE_ROOM', id => {
+    console.log('delete room!!!');
+    io.emit('DELETE_ROOM', id);
   });
 });
 

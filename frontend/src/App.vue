@@ -1,11 +1,21 @@
 <template>
   <div id="app">
-    <h3 class="mt-3">Ostle Online</h3>
+    <Header />
     <div id="body">
       <router-view />
     </div>
   </div>
 </template>
+
+<script>
+import Header from './components/Header.vue';
+
+export default {
+  components: {
+    Header,
+  },
+};
+</script>
 
 <style>
 #app {
@@ -21,7 +31,7 @@ h3 {
 
 #body {
   text-align: center;
-  width: 800px;
+  width: 1000px;
   margin: 60px auto;
 }
 

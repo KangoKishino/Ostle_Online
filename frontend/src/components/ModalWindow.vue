@@ -37,11 +37,13 @@
 
 .modal-content {
   padding: 10px 20px;
+  border-color: #fff;
 }
 
 .modal-footer {
   background: #fff;
   padding: 10px;
   text-align: right;
+  border-color: #fff;
 }
 </style>

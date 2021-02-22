@@ -10,6 +10,16 @@ const routes = [
     name: 'Home',
     component: Home,
   },
+  {
+    path: '/host/:id',
+    name: 'Hostgame',
+    component: () => import('../views/HostGamePage.vue'),
+  },
+  {
+    path: '/guest/:id',
+    name: 'Guestgame',
+    component: () => import('../views/GuestGamePage.vue'),
+  },
 ];
 
 const router = new VueRouter({
