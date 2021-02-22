@@ -39,7 +39,7 @@ exports.getRooms = (req, res, next) => {
     });
 };
 
-(exports.getRoomInfo = (req, res) => {
+exports.getRoomInfo = (req, res) => {
   db.Messages.findAll({
     where: { room_id: req.message.room_id },
   })
@@ -53,37 +53,37 @@ exports.getRooms = (req, res, next) => {
     .catch(() => {
       res.status(500).json({ error: 'Response Error' });
     });
-}),
-  (exports.createRoom = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.send({
-        error: errors.array()[0].msg,
-      });
-    }
-    const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
-    const newRoom = db.Rooms.build({
-      name: req.body.name,
-      password: hashedPassword,
-      full_capacity: 0,
-      status: 'before',
-      play_first: 'host',
-      time: 1,
-      host_time: '00:05:00',
-      guest_time: '00:05:00',
+};
+exports.createRoom = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.send({
+      error: errors.array()[0].msg,
     });
-    newRoom
-      .save()
-      .then(room => {
-        req.room = room;
-        next();
-      })
-      .catch(() => {
-        res.send({
-          error: 'この部屋名は既に利用されています',
-        });
-      });
+  }
+  const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
+  const newRoom = db.Rooms.build({
+    name: req.body.name,
+    password: hashedPassword,
+    full_capacity: 0,
+    status: 'before',
+    play_first: 'host',
+    time: 1,
+    host_time: '00:05:00',
+    guest_time: '00:05:00',
   });
+  newRoom
+    .save()
+    .then(room => {
+      req.room = room;
+      next();
+    })
+    .catch(() => {
+      res.send({
+        error: 'この部屋名は既に利用されています',
+      });
+    });
+};
 
 exports.createBoard = (req, res, next) => {
   const newBoard = db.Boards.build({
