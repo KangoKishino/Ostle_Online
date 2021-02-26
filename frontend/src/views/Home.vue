@@ -117,11 +117,11 @@ export default {
       .then(() => {
         this.roomList = [];
         this.isUpdateError = false;
-        for (let i = 0; i < this.$store.getters.rooms.length; i++) {
-          if (this.$store.getters.rooms[i].status === 'before') {
-            this.roomList.push(this.$store.getters.rooms[i]);
+        this.$store.getters.rooms.forEach(room => {
+          if (room.status === 'before') {
+            this.roomList.push(room);
           }
-        }
+        });
       })
       .catch(() => {
         this.isUpdateError = true;
@@ -169,19 +169,24 @@ export default {
     },
   },
   mounted() {
+    // 部屋一覧更新処理
     this.$store.subscribe(mutation => {
       if (mutation.type === 'setRooms') {
         this.roomList = [];
-        for (let i = 0; i < this.$store.getters.rooms.length; i++) {
-          if (this.$store.getters.rooms[i].status === 'before') {
-            this.roomList.push(this.$store.getters.rooms[i]);
+        this.$store.getters.rooms.forEach(room => {
+          if (room.status === 'before') {
+            this.roomList.push(room);
           }
-        }
+        });
       }
     });
     this.socket.on('UPDATE_ROOM', () => {
       this.$store.dispatch('getRooms').catch(() => {
-        this.roomList = this.$store.getters.rooms;
+        this.isUpdateError = true;
+      });
+    });
+    this.socket.on('ENTER_ROOM', () => {
+      this.$store.dispatch('getRooms').catch(() => {
         this.isUpdateError = true;
       });
     });

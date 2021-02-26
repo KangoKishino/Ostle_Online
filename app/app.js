@@ -30,48 +30,17 @@ app.use(cookieParser());
 app.use(cors());
 
 app.post('/getRooms', roomController.sendRooms);
-app.post(
-  '/createRoom',
-  validateController.validateRoom,
-  roomController.createRoom,
-  roomController.createBoard,
-  messageController.createMessage,
-  roomController.createJWT,
-  roomController.getRoomInfo
-);
-app.post(
-  '/enterRoom',
-  roomController.checkPassword,
-  roomController.createJWT,
-  roomController.enteredStatus,
-  messageController.enterMessage,
-  roomController.getRoomInfo
-);
-app.post(
-  '/getGameInfo',
-  roomController.auth,
-  gameController.getBoard,
-  messageController.getMessages,
-  gameController.sendGameInfo
-);
+app.post('/createRoom', validateController.validateRoom, roomController.createRoom);
+app.post('/enterRoom', roomController.enterRoom);
+app.post('/getGameInfo', roomController.getGameInfo);
 
-app.post(
-  '/sendMessage',
-  roomController.auth,
-  validateController.validateMessage,
-  messageController.setMessage,
-  messageController.sendMessages
-);
-app.post('/getMessages', roomController.auth, messageController.sendMessages);
-app.post('/changeTurn', roomController.auth, gameController.changeTurn);
-app.post('/changeTime', roomController.auth, gameController.changeTime);
+app.post('/sendMessage', validateController.validateMessage, messageController.sendMessage);
+app.post('/receiveMessages', messageController.receiveMessages);
 
-app.post('/leaveRoom', messageController.leaveRoom, roomController.beforeStatus);
-app.post(
-  '/deleteRoom',
-  roomController.deleteRoom,
-  gameController.deleteBoard,
-  messageController.deleteMessage
-);
+app.post('/changeTurn', gameController.changeTurn);
+app.post('/changeTime', gameController.changeTime);
+
+app.post('/leaveRoom', roomController.leaveRoom);
+app.post('/deleteRoom', roomController.deleteRoom);
 
 module.exports = app;

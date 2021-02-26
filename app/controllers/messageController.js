@@ -2,14 +2,67 @@
 
 const db = require('../models');
 const { validationResult } = require('express-validator');
+const roomController = require('./roomController');
 
-exports.sendMessages = (req, res) => {
+exports.getMessages = (id, res) => {
+  return db.Messages.findAll({
+    where: { room_id: id },
+  })
+    .then(messages => {
+      return messages;
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Response Error' });
+    });
+};
+
+exports.createMessage = (id, res) => {
+  const newMessage = db.Messages.build({
+    room_id: id,
+    user: 'サーバー',
+    message: 'ホストが入室しました',
+  });
+  return newMessage
+    .save()
+    .then(message => {
+      return message;
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'Create Message Error!' });
+    });
+};
+
+exports.enterMessage = (id, res) => {
+  const newMessage = db.Messages.build({
+    room_id: id,
+    user: 'サーバー',
+    message: 'ゲストが入室しました',
+  });
+  return newMessage
+    .save()
+    .then(() => {
+      return;
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'Create Message Error!' });
+    });
+};
+
+exports.sendMessage = async (req, res) => {
+  const errors = await validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.send({
+      error: errors.array()[0].msg,
+    });
+  }
+  const jwt = await roomController.auth(req.body.token, res);
+  await setMessage(jwt.id, req.body.user, req.body.message, res);
   db.Messages.findAll({
-    where: { room_id: req.jwt.id },
+    where: { room_id: jwt.id },
   })
     .then(messages => {
       res.send({
-        user: req.jwt,
+        user: jwt,
         messages: messages,
       });
     })
@@ -18,100 +71,62 @@ exports.sendMessages = (req, res) => {
     });
 };
 
-exports.getMessages = (req, res, next) => {
+exports.receiveMessages = async (req, res) => {
+  const jwt = await roomController.auth(req.body.token, res);
   db.Messages.findAll({
-    where: { room_id: req.jwt.id },
+    where: { room_id: jwt.id },
   })
     .then(messages => {
-      req.messages = messages;
-      next();
+      res.send({
+        user: jwt,
+        messages: messages,
+      });
     })
     .catch(() => {
       res.status(500).json({ error: 'Response Error' });
     });
 };
 
-exports.createMessage = (req, res, next) => {
+function setMessage(id, user, message, res) {
   const newMessage = db.Messages.build({
-    room_id: req.room.id,
-    user: 'サーバー',
-    message: 'ホストが入室しました',
+    room_id: id,
+    user: user,
+    message: message,
   });
-  newMessage
+  return newMessage
     .save()
     .then(message => {
-      req.message = message;
-      next();
+      return message;
     })
     .catch(() => {
       res.status(400).json({ error: 'Create Message Error!' });
     });
-};
+}
 
-exports.enterMessage = (req, res, next) => {
+exports.leaveRoom = (id, res) => {
   const newMessage = db.Messages.build({
-    room_id: req.body.room.id,
-    user: 'サーバー',
-    message: 'ゲストが入室しました',
-  });
-  newMessage
-    .save()
-    .then(message => {
-      req.message = message;
-      next();
-    })
-    .catch(() => {
-      res.status(400).json({ error: 'Create Message Error!' });
-    });
-};
-
-exports.setMessage = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.send({
-      error: errors.array()[0].msg,
-    });
-  }
-  const newMessage = db.Messages.build({
-    room_id: req.jwt.id,
-    user: req.body.user,
-    message: req.body.message,
-  });
-  newMessage
-    .save()
-    .then(message => {
-      req.message = message;
-      next();
-    })
-    .catch(() => {
-      res.status(400).json({ error: 'Create Message Error!' });
-    });
-};
-
-exports.leaveRoom = (req, res, next) => {
-  const newMessage = db.Messages.build({
-    room_id: req.body.myInfo.id,
+    room_id: id,
     user: 'サーバー',
     message: 'ゲストが退室しました',
   });
-  newMessage
+  return newMessage
     .save()
     .then(() => {
-      next();
+      return;
     })
     .catch(() => {
       res.status(400).json({ error: 'DB Change Error!' });
     });
 };
 
-exports.deleteMessage = (req, res) => {
-  db.Messages.destroy({
+exports.deleteMessage = (id, res) => {
+  return db.Messages.destroy({
     where: {
-      room_id: req.body.myInfo.id,
+      room_id: id,
     },
   })
     .then(() => {
-      res.send();
+      res.status(200).send();
     })
     .catch(() => {
       res.status(400).json({ error: 'DB Change Error!' });

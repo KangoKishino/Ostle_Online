@@ -151,6 +151,12 @@
 <script>
 import io from 'socket.io-client';
 
+const minHostPiece = 1;
+const maxHostPiece = 5;
+const minGuestPiece = 6;
+const maxGuestPiece = 10;
+const holeNum = 11;
+
 export default {
   data() {
     return {
@@ -163,6 +169,7 @@ export default {
     };
   },
   created() {
+    // 対戦画面情報取得
     this.$store
       .dispatch('getGamePage')
       .then(() => {
@@ -178,17 +185,17 @@ export default {
   },
   methods: {
     judgeHost(index, row) {
-      if (0 < this.board[index][row] && this.board[index][row] <= 5) {
+      if (minHostPiece <= this.board[index][row] && this.board[index][row] <= maxHostPiece) {
         return true;
       }
     },
     judgeGuest(index, row) {
-      if (5 < this.board[index][row] && this.board[index][row] <= 10) {
+      if (minGuestPiece <= this.board[index][row] && this.board[index][row] <= maxGuestPiece) {
         return true;
       }
     },
     judgeHole(index, row) {
-      if (this.board[index][row] === 11) {
+      if (this.board[index][row] === holeNum) {
         return true;
       }
     },
@@ -224,6 +231,7 @@ export default {
   },
   mounted() {
     this.$store.subscribe(mutation => {
+      // 設定変更時の処理
       if (mutation.type === 'setRooms') {
         this.myRoom = this.$store.getters.rooms.find(
           room => room.id === this.$store.getters.myInfo.id
@@ -233,7 +241,7 @@ export default {
     });
     this.socket.on('ENTER_ROOM', () => {
       this.$store
-        .dispatch('getMessages', {
+        .dispatch('receiveMessages', {
           id: this.$store.getters.myInfo.id,
         })
         .then(() => {
@@ -242,7 +250,7 @@ export default {
     });
     this.socket.on('SEND_MESSAGE', () => {
       this.$store
-        .dispatch('getMessages', {
+        .dispatch('receiveMessages', {
           id: this.$store.getters.myInfo.id,
         })
         .then(() => {

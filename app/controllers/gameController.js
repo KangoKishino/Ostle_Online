@@ -1,32 +1,42 @@
 'use strict';
 
 const db = require('../models');
+const roomController = require('./roomController');
 
-exports.sendGameInfo = (req, res) => {
-  res.send({
-    user: req.jwt,
-    messages: req.messages,
-    board: req.board,
-  });
+exports.getBoard = (id, res) => {
+  return db.Boards.findOne({
+    where: { id: id },
+    attributes: {
+      exclude: ['id', 'new_coordinates', 'old_coordinates', 'createdAt', 'updatedAt'],
+    },
+  })
+    .then(board => {
+      return board;
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Response Error!' });
+    });
 };
 
-exports.changeTurn = (req, res) => {
+exports.changeTurn = async (req, res) => {
+  const jwt = await roomController.auth(req.body.token, res);
   db.Rooms.findOne({
-    where: { id: req.jwt.id },
+    where: { id: jwt.id },
   })
     .then(room => {
       room.play_first = req.body.playFirst;
       room.save();
-      res.send();
+      res.status(200).send();
     })
     .catch(() => {
       res.status(400).json({ error: 'Capacity change Error!' });
     });
 };
 
-exports.changeTime = (req, res) => {
+exports.changeTime = async (req, res) => {
+  const jwt = await roomController.auth(req.body.token, res);
   db.Rooms.findOne({
-    where: { id: req.jwt.id },
+    where: { id: jwt.id },
   })
     .then(room => {
       const time = ['00:03:00', '00:05:00', '00:07:00', null];
@@ -34,33 +44,21 @@ exports.changeTime = (req, res) => {
       room.host_time = time[room.time];
       room.guest_time = time[room.time];
       room.save();
-      res.send();
+      res.status(200).send();
     })
     .catch(() => {
       res.status(400).json({ error: 'Capacity change Error!' });
     });
 };
 
-exports.getBoard = (req, res, next) => {
-  db.Boards.findOne({
-    where: { id: req.jwt.id },
-    attributes: {
-      exclude: ['id', 'createdAt', 'updatedAt'],
-    },
-  }).then(board => {
-    req.board = board;
-    next();
-  });
-};
-
-exports.deleteBoard = (req, res, next) => {
-  db.Boards.destroy({
+exports.deleteBoard = (id, res) => {
+  return db.Boards.destroy({
     where: {
-      id: req.body.myInfo.id,
+      id: id,
     },
   })
     .then(() => {
-      next();
+      return;
     })
     .catch(() => {
       res.status(400).json({ error: 'DB Change Error!' });

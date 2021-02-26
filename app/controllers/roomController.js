@@ -7,6 +7,8 @@ const saltRounds = 10;
 const expireTime = process.env.EXPIRE_TIME;
 const secretKey = process.env.SECRET_KEY;
 const { validationResult } = require('express-validator');
+const messageController = require('./messageController');
+const gameController = require('./gameController');
 
 exports.sendRooms = async (req, res) => {
   const rooms = await db.Rooms.findAll({
@@ -14,56 +16,103 @@ exports.sendRooms = async (req, res) => {
       exclude: ['password', 'createdAt', 'updatedAt'],
     },
   });
-  res
-    .send({
-      rooms: rooms,
-    })
-    .catch(() => {
-      res.status(500).json({ error: 'Response Error' });
-    });
+  res.send({
+    rooms: rooms,
+  });
 };
 
-exports.getRooms = (req, res, next) => {
-  db.Rooms.findAll({
-    where: { id: req.body.id },
-    attributes: {
-      exclude: ['password', 'createdAt', 'updatedAt'],
-    },
-  })
-    .then(rooms => {
-      req.rooms = rooms;
-      next();
-    })
-    .catch(() => {
-      res.status(500).json({ error: 'Response Error' });
-    });
-};
-
-exports.getRoomInfo = (req, res) => {
-  db.Messages.findAll({
-    where: { room_id: req.message.room_id },
-  })
-    .then(messages => {
-      res.send({
-        id: req.message.room_id,
-        messages: messages,
-        token: req.token,
-      });
-    })
-    .catch(() => {
-      res.status(500).json({ error: 'Response Error' });
-    });
-};
-exports.createRoom = (req, res, next) => {
-  const errors = validationResult(req);
+exports.createRoom = async (req, res) => {
+  const errors = await validationResult(req);
   if (!errors.isEmpty()) {
     return res.send({
       error: errors.array()[0].msg,
     });
   }
   const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
+  const room = await createNewRoom(req.body.name, hashedPassword, res);
+  await createBoard(res);
+  const token = await createJWT(room.id, req.body.user);
+  const message = await messageController.createMessage(room.id, res);
+  db.Messages.findAll({
+    where: { room_id: room.id },
+  })
+    .then(messages => {
+      res.send({
+        id: message.room_id,
+        messages: messages,
+        token: token,
+      });
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Response Error' });
+    });
+};
+
+exports.enterRoom = async (req, res) => {
+  checkPassword(req.body.room.id, req.body.password, res);
+  const token = await createJWT(req.body.room.id, req.body.user);
+  await enteredStatus(req.body.room.id, res);
+  await messageController.enterMessage(req.body.room.id, res);
+  db.Messages.findAll({
+    where: { room_id: req.body.room.id },
+  })
+    .then(messages => {
+      res.send({
+        id: req.body.room.id,
+        messages: messages,
+        token: token,
+      });
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Response Error' });
+    });
+};
+
+exports.getGameInfo = async (req, res) => {
+  const jwt = await auth(req.body.token, res);
+  const board = await gameController.getBoard(jwt.id, res);
+  const messages = await messageController.getMessages(jwt.id, res);
+  res.send({
+    user: jwt,
+    messages: messages,
+    board: board,
+  });
+};
+
+exports.leaveRoom = async (req, res) => {
+  await messageController.leaveRoom(req.body.myInfo.id, res);
+  db.Rooms.findOne({
+    where: { id: req.body.myInfo.id },
+  })
+    .then(room => {
+      room.status = 'before';
+      room.save();
+      res.status(200).send();
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'Capacity change Error!' });
+    });
+};
+
+exports.deleteRoom = async (req, res) => {
+  await deleteRoom(req.body.myInfo.id, res);
+  await gameController.deleteBoard(req.body.myInfo.id, res);
+  await messageController.deleteMessage(req.body.myInfo.id, res);
+};
+
+exports.auth = (token, res) => {
+  return jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      res.status(400).json({ error: 'Access is Denied!' });
+      return;
+    }
+    return decoded;
+  });
+};
+
+function createNewRoom(name, hashedPassword, res) {
   const newRoom = db.Rooms.build({
-    name: req.body.name,
+    name: name,
     password: hashedPassword,
     full_capacity: 0,
     status: 'before',
@@ -72,20 +121,31 @@ exports.createRoom = (req, res, next) => {
     host_time: '00:05:00',
     guest_time: '00:05:00',
   });
-  newRoom
+  return newRoom
     .save()
     .then(room => {
-      req.room = room;
-      next();
+      return room;
     })
     .catch(() => {
       res.send({
         error: 'この部屋名は既に利用されています',
       });
     });
-};
+}
 
-exports.createBoard = (req, res, next) => {
+function createJWT(id, user) {
+  const payload = {
+    id: id,
+    user: user,
+  };
+  const option = {
+    expiresIn: expireTime,
+  };
+  const token = jwt.sign(payload, secretKey, option);
+  return token;
+}
+
+function createBoard(res) {
   const newBoard = db.Boards.build({
     hole_coordinates: 12,
     host_coordinates1: 20,
@@ -101,92 +161,60 @@ exports.createBoard = (req, res, next) => {
     new_coordinates: null,
     old_coordinates: null,
   });
-  newBoard
+  return newBoard
     .save()
     .then(board => {
-      req.board = board;
-      next();
+      return board;
     })
     .catch(() => {
       res.status(400).json({ error: 'Create Board Error!' });
     });
-};
+}
 
-exports.createJWT = (req, res, next) => {
-  const payload = {
-    id: req.room.id,
-    user: req.body.user,
-  };
-  const option = {
-    expiresIn: expireTime,
-  };
-  const token = jwt.sign(payload, secretKey, option);
-  req.token = token;
-  next();
-};
-
-exports.checkPassword = (req, res, next) => {
+function checkPassword(id, password, res) {
   db.Rooms.findOne({
-    where: { id: req.body.room.id },
+    where: { id: id },
   }).then(room => {
-    if (bcrypt.compareSync(req.body.password, room.dataValues.password)) {
-      req.room = room;
-      next();
-    } else {
+    if (!bcrypt.compareSync(password, room.password)) {
       res.status(400).json({ error: 'Password do not match!' });
+      return;
     }
+    return room;
   });
-};
+}
 
-exports.auth = (req, res, next) => {
-  const token = req.body.token;
-  jwt.verify(token, secretKey, (err, decoded) => {
+function auth(token, res) {
+  return jwt.verify(token, secretKey, (err, decoded) => {
     if (err) {
       res.status(400).json({ error: 'Access is Denied!' });
-    } else {
-      req.jwt = decoded;
-      next();
+      return;
     }
+    return decoded;
   });
-};
+}
 
-exports.enteredStatus = (req, res, next) => {
+function enteredStatus(id, res) {
   db.Rooms.findOne({
-    where: { id: req.room.id },
+    where: { id: id },
   })
     .then(room => {
       room.status = 'entered';
       room.save();
-      next();
     })
     .catch(() => {
       res.status(400).json({ error: 'Capacity change Error!' });
     });
-};
+}
 
-exports.beforeStatus = (req, res) => {
-  db.Rooms.findOne({
-    where: { id: req.body.myInfo.id },
-  })
-    .then(room => {
-      room.status = 'before';
-      room.save();
-      res.send();
-    })
-    .catch(() => {
-      res.status(400).json({ error: 'Capacity change Error!' });
-    });
-};
-
-exports.deleteRoom = (req, res, next) => {
-  db.Rooms.findOne({
-    where: { id: req.body.myInfo.id },
+function deleteRoom(id, res) {
+  return db.Rooms.findOne({
+    where: { id: id },
   })
     .then(room => {
       room.destroy();
-      next();
+      return;
     })
     .catch(() => {
       res.status(400).json({ error: 'DB Change Error!' });
     });
-};
+}
