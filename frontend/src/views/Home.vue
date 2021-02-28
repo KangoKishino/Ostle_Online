@@ -9,7 +9,7 @@
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <p>{{ room.name }}</p>
-              <button type="button" @click="openEnterRoom(room.name)" class="btn btn-outline-dark">
+              <button type="button" @click="openEnterRoom(room)" class="btn btn-outline-dark">
                 入室
               </button>
             </div>
@@ -17,16 +17,16 @@
         </div>
       </div>
       <p v-if="isUpdateError" class="error">ページの更新に失敗しました</p>
-      <button type="button" @click="openMakeRoom" class="btn btn-dark ml-2 mt-3 right">
+      <button type="button" @click="openCreateRoom" class="btn btn-dark ml-2 mt-3 right">
         <Plus />部屋作成
       </button>
     </div>
-    <ModalWindow @close="closeMakeRoom()" v-show="showMakeRoom">
+    <ModalWindow @close="closeCreateRoom()" v-show="showCreateRoom">
       <h6 class="py-2">部屋を作成</h6>
       <table>
         <tr class="py-3">
-          <td class="width200 py-3">部屋名</td>
-          <td>
+          <td class="width150 py-3">部屋名</td>
+          <td class="width250">
             <ValidationProvider rules="max:128" v-slot="{ errors }">
               <input type="text" v-model="roomName" name="name" />
               <p class="error">{{ errors[0] }}</p>
@@ -48,14 +48,14 @@
         {{ this.$store.getters.errorMessage }}
       </p>
       <template slot="footer">
-        <button class="btn btn-dark" @click="makeRoom()">作成</button>
-        <button class="btn btn-outline-dark" @click="closeMakeRoom()">
+        <button class="btn btn-dark" @click="createRoom()">作成</button>
+        <button class="btn btn-outline-dark" @click="closeCreateRoom()">
           閉じる
         </button>
       </template>
     </ModalWindow>
     <ModalWindow @close="closeEnterRoom()" v-show="showEnterRoom">
-      <h6 class="py-2">{{ enterName }}のパスワードを入力してください</h6>
+      <h6 class="py-2">{{ choiceRoom.name }}のパスワードを入力してください</h6>
       <table>
         <tr>
           <td class="py-3">パスワード</td>
@@ -65,8 +65,9 @@
         </tr>
       </table>
 
+      <p v-if="isEnterError" class="error">パスワードが違います</p>
       <template slot="footer">
-        <button class="btn btn-dark">入室</button>
+        <button class="btn btn-dark" @click="enterRoom()">入室</button>
         <button class="btn btn-outline-dark" @click="closeEnterRoom()">
           閉じる
         </button>
@@ -100,63 +101,97 @@ export default {
   data() {
     return {
       roomList: [],
-      showMakeRoom: false,
+      choiceRoom: '',
+      showCreateRoom: false,
       showEnterRoom: false,
       roomName: '',
       roomPassword: '',
-      enterName: '',
-      isRoom: false,
+      isEnterError: false,
       isUpdateError: false,
       socket: io('http://localhost:3000'),
     };
   },
   created() {
-    this.roomList = this.$store.getters.rooms;
-    this.$store.dispatch('fetchRoom');
-  },
-  computed: {
-    boardName() {
-      return this.$store.getters.rooms;
-    },
+    this.$store
+      .dispatch('getRooms')
+      .then(() => {
+        this.roomList = [];
+        this.isUpdateError = false;
+        this.$store.getters.rooms.forEach(room => {
+          if (room.status === 'before') {
+            this.roomList.push(room);
+          }
+        });
+      })
+      .catch(() => {
+        this.isUpdateError = true;
+      });
+    this.$store.dispatch('resetMyInfo');
   },
   methods: {
-    openMakeRoom() {
-      this.showMakeRoom = true;
+    openCreateRoom() {
+      this.showCreateRoom = true;
     },
-    openEnterRoom(name) {
+    openEnterRoom(room) {
       this.showEnterRoom = true;
-      this.enterName = name;
+      this.choiceRoom = room;
     },
-    closeMakeRoom() {
-      this.showMakeRoom = false;
+    closeCreateRoom() {
+      this.showCreateRoom = false;
     },
     closeEnterRoom() {
       this.showEnterRoom = false;
       this.enterName = '';
     },
-    makeRoom() {
+    createRoom() {
       this.$store
-        .dispatch('makeRoom', {
+        .dispatch('createRoom', {
           roomName: this.roomName,
           roomPassword: this.roomPassword,
         })
         .then(() => {
-          this.roomName = '';
+          this.$router.push({ name: 'Hostgame', params: { id: this.$store.getters.myInfo.id } });
+        });
+    },
+    enterRoom() {
+      this.$store
+        .dispatch('enterRoom', {
+          room: this.choiceRoom,
+          password: this.roomPassword,
+        })
+        .then(() => {
           this.roomPassword = '';
-          this.closeMakeRoom();
+          this.$router.push({ name: 'Guestgame', params: { id: this.$store.getters.myInfo.id } });
+        })
+        .catch(() => {
+          this.isEnterError = true;
         });
     },
   },
   mounted() {
+    // 部屋一覧更新処理
     this.$store.subscribe(mutation => {
       if (mutation.type === 'setRooms') {
-        this.roomList = this.$store.getters.rooms;
+        this.roomList = [];
+        this.$store.getters.rooms.forEach(room => {
+          if (room.status === 'before') {
+            this.roomList.push(room);
+          }
+        });
       }
     });
     this.socket.on('UPDATE_ROOM', () => {
-      this.$store.dispatch('fetchRoom').catch(() => {
+      this.$store.dispatch('getRooms').catch(() => {
         this.isUpdateError = true;
       });
+    });
+    this.socket.on('ENTER_ROOM', () => {
+      this.$store.dispatch('getRooms').catch(() => {
+        this.isUpdateError = true;
+      });
+    });
+    this.socket.on('DELETE_ROOM', () => {
+      this.$store.dispatch('getRooms');
     });
   },
 };
@@ -178,7 +213,11 @@ p {
   margin-left: 80%;
 }
 
-.width200 {
+.width150 {
   width: 150px;
+}
+
+.width250 {
+  width: 250px;
 }
 </style>

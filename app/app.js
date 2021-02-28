@@ -7,6 +7,8 @@ const logger = require('morgan');
 const cors = require('cors');
 const roomController = require('./controllers/roomController');
 const validateController = require('./controllers/validateController');
+const messageController = require('./controllers/messageController');
+const gameController = require('./controllers/gameController');
 const methodOverride = require('method-override');
 
 const app = express();
@@ -27,12 +29,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors());
 
-app.post('/fetchRoom', roomController.fetchRoom);
-app.post(
-  '/makeRoom',
-  validateController.validateRoom,
-  roomController.makeRoom,
-  roomController.fetchRoom
-);
+app.post('/getRooms', roomController.sendRooms);
+app.post('/createRoom', validateController.validateRoom, roomController.createRoom);
+app.post('/enterRoom', roomController.enterRoom);
+app.post('/getGameInfo', roomController.getGameInfo);
+
+app.post('/sendMessage', validateController.validateMessage, messageController.sendMessage);
+app.post('/receiveMessages', messageController.receiveMessages);
+
+app.post('/changeTurn', gameController.changeTurn);
+app.post('/changeTime', gameController.changeTime);
+
+app.post('/leaveRoom', roomController.leaveRoom);
+app.post('/deleteRoom', roomController.deleteRoom);
 
 module.exports = app;
