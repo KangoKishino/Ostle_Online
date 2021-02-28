@@ -150,12 +150,7 @@
 
 <script>
 import io from 'socket.io-client';
-
-const minHostPiece = 1;
-const maxHostPiece = 5;
-const minGuestPiece = 6;
-const maxGuestPiece = 10;
-const holeNum = 11;
+import config from '../const/const';
 
 export default {
   data() {
@@ -185,17 +180,23 @@ export default {
   },
   methods: {
     judgeHost(index, row) {
-      if (minHostPiece <= this.board[index][row] && this.board[index][row] <= maxHostPiece) {
+      if (
+        config.MIN_HOST_PIECE <= this.board[index][row] &&
+        this.board[index][row] <= config.MAX_HOST_PIECE
+      ) {
         return true;
       }
     },
     judgeGuest(index, row) {
-      if (minGuestPiece <= this.board[index][row] && this.board[index][row] <= maxGuestPiece) {
+      if (
+        config.MIN_GUEST_PIECE <= this.board[index][row] &&
+        this.board[index][row] <= config.MAX_GUEST_PIECE
+      ) {
         return true;
       }
     },
     judgeHole(index, row) {
-      if (this.board[index][row] === holeNum) {
+      if (this.board[index][row] === config.HOLE_NUM) {
         return true;
       }
     },
