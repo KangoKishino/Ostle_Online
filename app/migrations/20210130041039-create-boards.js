@@ -6,69 +6,78 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       hole_coordinates: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       host_coordinates1: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       host_coordinates2: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       host_coordinates3: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       host_coordinates4: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       host_coordinates5: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       guest_coordinates1: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       guest_coordinates2: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       guest_coordinates3: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       guest_coordinates4: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       guest_coordinates5: {
         allowNull: false,
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       new_coordinates: {
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
       },
       old_coordinates: {
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
+      },
+      my_turn: {
+        type: Sequelize.STRING,
+      },
+      host_time: {
+        type: Sequelize.TIME,
+      },
+      guest_time: {
+        type: Sequelize.TIME,
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
-      }
+        type: Sequelize.DATE,
+      },
     });
   },
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('Boards');
-  }
+  },
 };

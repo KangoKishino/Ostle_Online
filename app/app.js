@@ -33,12 +33,18 @@ app.post('/getRooms', roomController.sendRooms);
 app.post('/createRoom', validateController.validateRoom, roomController.createRoom);
 app.post('/enterRoom', roomController.enterRoom);
 app.post('/getGameInfo', roomController.getGameInfo);
+app.post('/afterStatus', roomController.afterStatus);
 
 app.post('/sendMessage', validateController.validateMessage, messageController.sendMessage);
 app.post('/receiveMessages', messageController.receiveMessages);
 
 app.post('/changeTurn', gameController.changeTurn);
 app.post('/changeTime', gameController.changeTime);
+app.post('/getBoard', gameController.getBoard);
+app.post('/startGame', gameController.startGame);
+app.post('/movePiece', gameController.movePiece);
+app.post('/moveHole', gameController.moveHole);
+app.post('/resetGame', gameController.resetGame);
 
 app.post('/leaveRoom', roomController.leaveRoom);
 app.post('/deleteRoom', roomController.deleteRoom);

@@ -30,12 +30,6 @@ module.exports = {
       time: {
         type: Sequelize.TINYINT,
       },
-      host_time: {
-        type: Sequelize.TIME,
-      },
-      guest_time: {
-        type: Sequelize.TIME,
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
