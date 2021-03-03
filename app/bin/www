@@ -41,7 +41,7 @@ io.on('connection', socket => {
     console.log('guest enter!!!');
     io.emit('ENTER_ROOM');
   });
-  socket.on('UPDATE_BOARD', function(id) {
+  socket.on('UPDATE_BOARD', id => {
     console.log('update board!!!');
     io.emit('UPDATE_BOARD', id);
   });

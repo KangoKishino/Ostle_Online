@@ -231,68 +231,37 @@ export default {
     // 移動可能なマスの判定
     canMoveSquare(index, row) {
       for (const coordinate of this.nextCoordinates) {
-        if (coordinate[0] === index && coordinate[1] === row) {
+        if (this.isNextCoordinates(index, row, coordinate[0], coordinate[1])) {
           return true;
         }
       }
     },
     // コマの移動
     moveCoordinates(index, row) {
-      if (this.myRoom.status === 'running' && this.gameInfo.myTurn === 'guest') {
+      if (this.isMyTurn()) {
         // コマの移動可能なマスの追加
-        if (
-          this.selectedPiece === false &&
-          this.selectedHole === false &&
-          config.MIN_GUEST_PIECE <= this.board[index][row] &&
-          this.board[index][row] <= config.MAX_GUEST_PIECE
-        ) {
+        if (this.isMovablePiece(index, row)) {
           this.selectedPiece = true;
           this.nextCoordinates = [];
           this.oldCoordinates = [index, row];
-          if (index !== 0) {
-            this.nextCoordinates.push([index - 1, row]);
-          }
-          if (index !== 4) {
-            this.nextCoordinates.push([index + 1, row]);
-          }
-          if (row !== 0) {
-            this.nextCoordinates.push([index, row - 1]);
-          }
-          if (row !== 4) {
-            this.nextCoordinates.push([index, row + 1]);
-          }
+          this.addNextCoordinates(index, row);
           // 穴の移動可能なマスの追加
-        } else if (
-          this.selectedPiece === false &&
-          this.selectedHole === false &&
-          this.board[index][row] === config.HOLE_NUM
-        ) {
+        } else if (this.isMovableHole(index, row)) {
           this.selectedHole = true;
           this.nextCoordinates = [];
           this.oldCoordinates = [index, row];
-          if (index !== 0 && this.board[index - 1][row] === 0) {
-            this.nextCoordinates.push([index - 1, row]);
-          }
-          if (index !== 4 && this.board[index + 1][row] === 0) {
-            this.nextCoordinates.push([index + 1, row]);
-          }
-          if (row !== 0 && this.board[index][row - 1] === 0) {
-            this.nextCoordinates.push([index, row - 1]);
-          }
-          if (row !== 4 && this.board[index][row + 1] === 0) {
-            this.nextCoordinates.push([index, row + 1]);
-          }
+          this.addNextCoordinates(index, row);
           // 移動先のマスを選択
-        } else if (this.selectedPiece || this.selectedHole) {
+        } else if (this.isSelectedNextCoordinates()) {
           for (const coordinate of this.nextCoordinates) {
             // コマの移動
-            if (coordinate[0] === index && coordinate[1] === row && this.selectedPiece) {
+            if (this.isNextCoordinatesAndPiece(index, row, coordinate[0], coordinate[1])) {
               this.$store.dispatch('movePiece', {
                 oldCoordinates: this.oldCoordinates,
                 newCoordinates: [index, row],
               });
               // 穴の移動
-            } else if (coordinate[0] === index && coordinate[1] === row && this.selectedHole) {
+            } else if (this.isNextCoordinatesAndHole(index, row, coordinate[0], coordinate[1])) {
               this.$store.dispatch('moveHole', {
                 oldCoordinates: this.oldCoordinates,
                 newCoordinates: [index, row],
@@ -326,6 +295,87 @@ export default {
           });
       }
     },
+    isNextCoordinates(index, row, nextIndex, nextRow) {
+      if (nextIndex === index && nextRow === row) {
+        return true;
+      }
+      return false;
+    },
+    isMyTurn() {
+      if (this.myRoom.status === 'running' && this.gameInfo.myTurn === 'guest') {
+        return true;
+      }
+      return false;
+    },
+    isMovablePiece(index, row) {
+      if (
+        this.selectedPiece === false &&
+        this.selectedHole === false &&
+        config.MIN_GUEST_PIECE <= this.board[index][row] &&
+        this.board[index][row] <= config.MAX_GUEST_PIECE
+      ) {
+        return true;
+      }
+      return false;
+    },
+    isMovableHole(index, row) {
+      if (
+        this.selectedPiece === false &&
+        this.selectedHole === false &&
+        this.board[index][row] === config.HOLE_NUM
+      ) {
+        return true;
+      }
+      return false;
+    },
+    // 移動可能な座標を追加
+    addNextCoordinates(index, row) {
+      if (this.selectedPiece) {
+        if (index !== 0) {
+          this.nextCoordinates.push([index - 1, row]);
+        }
+        if (index !== 4) {
+          this.nextCoordinates.push([index + 1, row]);
+        }
+        if (row !== 0) {
+          this.nextCoordinates.push([index, row - 1]);
+        }
+        if (row !== 4) {
+          this.nextCoordinates.push([index, row + 1]);
+        }
+      } else {
+        if (index !== 0 && this.board[index - 1][row] === 0) {
+          this.nextCoordinates.push([index - 1, row]);
+        }
+        if (index !== 4 && this.board[index + 1][row] === 0) {
+          this.nextCoordinates.push([index + 1, row]);
+        }
+        if (row !== 0 && this.board[index][row - 1] === 0) {
+          this.nextCoordinates.push([index, row - 1]);
+        }
+        if (row !== 4 && this.board[index][row + 1] === 0) {
+          this.nextCoordinates.push([index, row + 1]);
+        }
+      }
+    },
+    isSelectedNextCoordinates() {
+      if (this.selectedPiece || this.selectedHole) {
+        return true;
+      }
+      return false;
+    },
+    isNextCoordinatesAndPiece(index, row, nextIndex, nextRow) {
+      if (nextIndex === index && nextRow === row && this.selectedPiece) {
+        return true;
+      }
+      return false;
+    },
+    isNextCoordinatesAndHole(index, row, nextIndex, nextRow) {
+      if (nextIndex === index && nextRow === row && this.selectedHole) {
+        return true;
+      }
+      return false;
+    },
   },
   mounted() {
     this.$store.subscribe(mutation => {
@@ -337,7 +387,6 @@ export default {
       }
       if (mutation.type === 'setBoard') {
         this.board = this.$store.getters.board;
-        // this.myRoom.play_first === 'host' ? (this.myTurn = '後攻') : (this.myTurn = '先攻');
       }
       if (mutation.type === 'setGameInfo') {
         this.gameInfo = this.$store.getters.gameInfo;
@@ -493,6 +542,10 @@ td p {
   background-color: rgba(0, 0, 0, 0.4);
 }
 
+.moved {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
 .available {
   background-color: #fff;
 }
@@ -501,9 +554,5 @@ td p {
   color: #fff;
   background-color: #212529;
   border-color: #212529;
-}
-
-.moved {
-  background-color: rgba(0, 0, 0, 0.2);
 }
 </style>
