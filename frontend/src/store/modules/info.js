@@ -17,8 +17,7 @@ export default {
       },
       gameInfo: {
         myTurn: 'host',
-        hostTime: '00:05:00',
-        guestTime: '00:05:00',
+        timeOut: '',
       },
       movedPiece: ['', ''],
       dropedPiece: {
@@ -58,10 +57,9 @@ export default {
       state.myInfo.id = id;
       state.myInfo.user = user;
     },
-    setGameInfo(state, { myTurn, hostTime, guestTime }) {
+    setGameInfo(state, { myTurn, timeOut }) {
       state.gameInfo.myTurn = myTurn;
-      state.gameInfo.hostTime = hostTime;
-      state.gameInfo.guestTime = guestTime;
+      state.gameInfo.timeOut = timeOut;
     },
     setMovedPiece(state, { oldCoordinates, newCoordinates }) {
       state.movedPiece[0] = oldCoordinates;
@@ -195,13 +193,12 @@ export default {
         });
     },
     // メッセージ受信時の更新
-    receiveMessages({ commit, dispatch }, { id }) {
+    receiveMessages({ commit }, { id }) {
       const data = { id, token: Cookies.get('token') };
       return axios
         .post('/receiveMessages', data)
         .then(res => {
           commit('setMessages', res.data.messages);
-          dispatch('getRooms');
         })
         .catch(() => {
           return Promise.reject();
@@ -218,8 +215,7 @@ export default {
         commit('setBoard', res.data.coordinates);
         commit('setGameInfo', {
           myTurn: res.data.gameInfo.my_turn,
-          hostTime: res.data.gameInfo.host_time,
-          guestTime: res.data.gameInfo.guest_time,
+          timeOut: res.data.gameInfo.time_out,
         });
         commit('setDropedPiece', res.data.coordinates);
         commit('setMovedPiece', {
@@ -229,50 +225,45 @@ export default {
       });
     },
     // 先攻後攻変更
-    changeTurn({ dispatch, getters }, { playFirst }) {
+    changeTurn({ getters }, { playFirst }) {
       const data = { playFirst, token: Cookies.get('token') };
       return axios
         .post('/changeTurn', data)
         .then(() => {
           socket.emit('UPDATE_ROOM', getters.myInfo.id);
           socket.emit('UPDATE_BOARD', getters.myInfo.id);
-          dispatch('getRooms');
-          dispatch('getBoard');
         })
         .catch(() => {
           return Promise.reject();
         });
     },
     // 持ち時間設定変更
-    changeTime({ dispatch, getters }, { time }) {
+    changeTime({ getters }, { time }) {
       const data = { time, token: Cookies.get('token') };
       return axios
         .post('/changeTime', data)
         .then(() => {
           socket.emit('UPDATE_ROOM', getters.myInfo.id);
           socket.emit('UPDATE_BOARD', getters.myInfo.id);
-          dispatch('getRooms');
-          dispatch('getBoard');
         })
         .catch(() => {
           return Promise.reject();
         });
     },
     // 対戦開始
-    startGame({ dispatch, getters }) {
+    startGame({ getters }) {
       const data = { token: Cookies.get('token') };
       return axios
         .post('/startGame', data)
         .then(() => {
-          socket.emit('UPDATE_ROOM', getters.myInfo.id);
-          dispatch('getRooms');
+          socket.emit('START_GAME', getters.myInfo.id);
         })
         .catch(() => {
           return Promise.reject();
         });
     },
     // コマの移動
-    movePiece({ dispatch, getters }, { oldCoordinates, newCoordinates }) {
+    movePiece({ getters }, { oldCoordinates, newCoordinates }) {
       const data = {
         oldCoordinates: oldCoordinates,
         newCoordinates: newCoordinates,
@@ -281,7 +272,6 @@ export default {
       return axios
         .post('/movePiece', data)
         .then(() => {
-          dispatch('getBoard');
           socket.emit('UPDATE_BOARD', getters.myInfo.id);
         })
         .catch(() => {
@@ -289,7 +279,7 @@ export default {
         });
     },
     // 穴の移動
-    moveHole({ dispatch, getters }, { oldCoordinates, newCoordinates }) {
+    moveHole({ getters }, { oldCoordinates, newCoordinates }) {
       const data = {
         oldCoordinates: oldCoordinates,
         newCoordinates: newCoordinates,
@@ -298,7 +288,18 @@ export default {
       return axios
         .post('/moveHole', data)
         .then(() => {
-          dispatch('getBoard');
+          socket.emit('UPDATE_BOARD', getters.myInfo.id);
+        })
+        .catch(() => {
+          return Promise.reject();
+        });
+    },
+    // 時間切れ
+    timeOut({ getters }) {
+      const data = { user: getters.myInfo.user, token: Cookies.get('token') };
+      return axios
+        .post('/timeOut', data)
+        .then(() => {
           socket.emit('UPDATE_BOARD', getters.myInfo.id);
         })
         .catch(() => {
@@ -306,26 +307,23 @@ export default {
         });
     },
     // ステータス変更
-    afterStatus({ dispatch, getters }) {
+    afterStatus({ getters }) {
       const data = { token: Cookies.get('token') };
       return axios
         .post('/afterStatus', data)
         .then(() => {
           socket.emit('UPDATE_ROOM', getters.myInfo.id);
-          dispatch('getRooms');
         })
         .catch(() => {
           return Promise.reject();
         });
     },
     // 再戦
-    restartGame({ dispatch, getters }, { playFirst }) {
+    restartGame({ dispatch }, { playFirst }) {
       const data = { playFirst, token: Cookies.get('token') };
       return axios
         .post('/resetGame', data)
         .then(() => {
-          socket.emit('UPDATE_BOARD', getters.myInfo.id);
-          dispatch('getBoard');
           dispatch('startGame');
         })
         .catch(() => {

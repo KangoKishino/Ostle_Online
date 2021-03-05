@@ -27,8 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       new_coordinates: DataTypes.TINYINT,
       old_coordinates: DataTypes.TINYINT,
       my_turn: DataTypes.STRING,
-      host_time: DataTypes.TIME,
-      guest_time: DataTypes.TIME,
+      time_out: DataTypes.STRING,
     },
     {
       sequelize,
