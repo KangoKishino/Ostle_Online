@@ -1,6 +1,7 @@
 import axios from 'axios';
 import io from 'socket.io-client';
 import Cookies from 'vue-cookies';
+import config from '../../const/const';
 
 const socket = io('http://localhost:3000');
 
@@ -13,6 +14,16 @@ export default {
       myInfo: {
         id: null,
         user: null,
+      },
+      gameInfo: {
+        myTurn: 'host',
+        hostTime: '00:05:00',
+        guestTime: '00:05:00',
+      },
+      movedPiece: ['', ''],
+      dropedPiece: {
+        host: 0,
+        guest: 0,
       },
       errorMessage: '',
     };
@@ -34,7 +45,9 @@ export default {
         [0, 0, 0, 0, 0],
       ];
       Object.keys(board).forEach((key, index) => {
-        list[parseInt(board[key] / 5)][board[key] % 5] = index + 1;
+        if (board[key] < config.TOTAL_BOARD_NUM) {
+          list[parseInt(board[key] / 5)][board[key] % 5] = index + 1;
+        }
       });
       state.board = list.concat();
     },
@@ -44,6 +57,28 @@ export default {
     setMyInfo(state, { id, user }) {
       state.myInfo.id = id;
       state.myInfo.user = user;
+    },
+    setGameInfo(state, { myTurn, hostTime, guestTime }) {
+      state.gameInfo.myTurn = myTurn;
+      state.gameInfo.hostTime = hostTime;
+      state.gameInfo.guestTime = guestTime;
+    },
+    setMovedPiece(state, { oldCoordinates, newCoordinates }) {
+      state.movedPiece[0] = oldCoordinates;
+      state.movedPiece[1] = newCoordinates;
+    },
+    setDropedPiece(state, board) {
+      let hostPiece = 0;
+      let guestPiece = 0;
+      Object.keys(board).forEach(key => {
+        if (board[key] === config.DROPED_HOST_PIECE) {
+          hostPiece++;
+        } else if (board[key] === config.DROPED_GUEST_PIECE) {
+          guestPiece++;
+        }
+      });
+      state.dropedPiece.host = hostPiece;
+      state.dropedPiece.guest = guestPiece;
     },
     clearErrorMessage(state) {
       state.errorMessage = '';
@@ -58,6 +93,15 @@ export default {
     },
     messages(state) {
       return state.messages;
+    },
+    dropedPiece(state) {
+      return state.dropedPiece;
+    },
+    gameInfo(state) {
+      return state.gameInfo;
+    },
+    movedPiece(state) {
+      return state.movedPiece;
     },
     myInfo(state) {
       return state.myInfo;
@@ -87,7 +131,8 @@ export default {
     getGamePage({ commit }) {
       const data = { token: Cookies.get('token') };
       return axios.post('/getGameInfo', data).then(res => {
-        commit('setBoard', res.data.board);
+        commit('setBoard', res.data.coordinates);
+        commit('setDropedPiece', res.data.coordinates);
         commit('setMessages', res.data.messages);
         commit('clearErrorMessage');
         commit('setMyInfo', {
@@ -166,6 +211,23 @@ export default {
     setErrorMessage({ commit }, { errorMessage }) {
       commit('setErrorMessage', errorMessage);
     },
+    // 対戦情報取得
+    getBoard({ commit }) {
+      const data = { token: Cookies.get('token') };
+      return axios.post('/getBoard', data).then(res => {
+        commit('setBoard', res.data.coordinates);
+        commit('setGameInfo', {
+          myTurn: res.data.gameInfo.my_turn,
+          hostTime: res.data.gameInfo.host_time,
+          guestTime: res.data.gameInfo.guest_time,
+        });
+        commit('setDropedPiece', res.data.coordinates);
+        commit('setMovedPiece', {
+          oldCoordinates: res.data.gameInfo.old_coordinates,
+          newCoordinates: res.data.gameInfo.new_coordinates,
+        });
+      });
+    },
     // 先攻後攻変更
     changeTurn({ dispatch, getters }, { playFirst }) {
       const data = { playFirst, token: Cookies.get('token') };
@@ -173,7 +235,9 @@ export default {
         .post('/changeTurn', data)
         .then(() => {
           socket.emit('UPDATE_ROOM', getters.myInfo.id);
+          socket.emit('UPDATE_BOARD', getters.myInfo.id);
           dispatch('getRooms');
+          dispatch('getBoard');
         })
         .catch(() => {
           return Promise.reject();
@@ -186,7 +250,83 @@ export default {
         .post('/changeTime', data)
         .then(() => {
           socket.emit('UPDATE_ROOM', getters.myInfo.id);
+          socket.emit('UPDATE_BOARD', getters.myInfo.id);
           dispatch('getRooms');
+          dispatch('getBoard');
+        })
+        .catch(() => {
+          return Promise.reject();
+        });
+    },
+    // 対戦開始
+    startGame({ dispatch, getters }) {
+      const data = { token: Cookies.get('token') };
+      return axios
+        .post('/startGame', data)
+        .then(() => {
+          socket.emit('UPDATE_ROOM', getters.myInfo.id);
+          dispatch('getRooms');
+        })
+        .catch(() => {
+          return Promise.reject();
+        });
+    },
+    // コマの移動
+    movePiece({ dispatch, getters }, { oldCoordinates, newCoordinates }) {
+      const data = {
+        oldCoordinates: oldCoordinates,
+        newCoordinates: newCoordinates,
+        token: Cookies.get('token'),
+      };
+      return axios
+        .post('/movePiece', data)
+        .then(() => {
+          dispatch('getBoard');
+          socket.emit('UPDATE_BOARD', getters.myInfo.id);
+        })
+        .catch(() => {
+          return Promise.reject();
+        });
+    },
+    // 穴の移動
+    moveHole({ dispatch, getters }, { oldCoordinates, newCoordinates }) {
+      const data = {
+        oldCoordinates: oldCoordinates,
+        newCoordinates: newCoordinates,
+        token: Cookies.get('token'),
+      };
+      return axios
+        .post('/moveHole', data)
+        .then(() => {
+          dispatch('getBoard');
+          socket.emit('UPDATE_BOARD', getters.myInfo.id);
+        })
+        .catch(() => {
+          return Promise.reject();
+        });
+    },
+    // ステータス変更
+    afterStatus({ dispatch, getters }) {
+      const data = { token: Cookies.get('token') };
+      return axios
+        .post('/afterStatus', data)
+        .then(() => {
+          socket.emit('UPDATE_ROOM', getters.myInfo.id);
+          dispatch('getRooms');
+        })
+        .catch(() => {
+          return Promise.reject();
+        });
+    },
+    // 再戦
+    restartGame({ dispatch, getters }, { playFirst }) {
+      const data = { playFirst, token: Cookies.get('token') };
+      return axios
+        .post('/resetGame', data)
+        .then(() => {
+          socket.emit('UPDATE_BOARD', getters.myInfo.id);
+          dispatch('getBoard');
+          dispatch('startGame');
         })
         .catch(() => {
           return Promise.reject();

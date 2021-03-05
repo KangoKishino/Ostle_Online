@@ -19,8 +19,6 @@ module.exports = (sequelize, DataTypes) => {
       status: DataTypes.STRING,
       play_first: DataTypes.STRING,
       time: DataTypes.TINYINT,
-      host_time: DataTypes.TIME,
-      guest_time: DataTypes.TIME,
     },
     {
       sequelize,

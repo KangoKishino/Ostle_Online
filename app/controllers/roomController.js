@@ -70,13 +70,30 @@ exports.enterRoom = async (req, res) => {
 
 exports.getGameInfo = async (req, res) => {
   const jwt = await auth(req.body.token, res);
-  const board = await gameController.getBoard(jwt.id, res);
+  const coordinates = await gameController.getCoordinates(jwt.id, res);
+  const gameInfo = await gameController.getGameInfo(jwt.id, res);
   const messages = await messageController.getMessages(jwt.id, res);
   res.send({
     user: jwt,
     messages: messages,
-    board: board,
+    coordinates: coordinates,
+    gameInfo: gameInfo,
   });
+};
+
+exports.afterStatus = async (req, res) => {
+  const jwt = await auth(req.body.token, res);
+  db.Rooms.findOne({
+    where: { id: jwt.id },
+  })
+    .then(room => {
+      room.status = 'after';
+      room.save();
+      res.status(200).send();
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'Capacity change Error!' });
+    });
 };
 
 exports.leaveRoom = async (req, res) => {
@@ -118,8 +135,6 @@ function createNewRoom(name, hashedPassword, res) {
     status: 'before',
     play_first: 'host',
     time: 1,
-    host_time: '00:05:00',
-    guest_time: '00:05:00',
   });
   return newRoom
     .save()
@@ -160,6 +175,9 @@ function createBoard(res) {
     guest_coordinates5: 4,
     new_coordinates: null,
     old_coordinates: null,
+    my_turn: 'host',
+    host_time: '00:05:00',
+    guest_time: '00:05:00',
   });
   return newBoard
     .save()
@@ -205,6 +223,34 @@ function enteredStatus(id, res) {
       res.status(400).json({ error: 'Capacity change Error!' });
     });
 }
+
+exports.changeTurn = (id, user, res) => {
+  return db.Rooms.findOne({
+    where: { id: id },
+  })
+    .then(room => {
+      room.play_first = user;
+      room.save();
+      return;
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'Capacity change Error!' });
+    });
+};
+
+exports.changeTime = (id, reqTime, res) => {
+  return db.Rooms.findOne({
+    where: { id: id },
+  })
+    .then(room => {
+      room.time = reqTime;
+      room.save();
+      return;
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'Capacity change Error!' });
+    });
+};
 
 function deleteRoom(id, res) {
   return db.Rooms.findOne({

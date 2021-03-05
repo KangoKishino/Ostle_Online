@@ -4,4 +4,7 @@ export default Object.freeze({
   MIN_GUEST_PIECE: 6,
   MAX_GUEST_PIECE: 10,
   HOLE_NUM: 11,
+  TOTAL_BOARD_NUM: 25,
+  DROPED_HOST_PIECE: 25,
+  DROPED_GUEST_PIECE: 26,
 });
