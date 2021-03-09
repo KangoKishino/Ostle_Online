@@ -44,6 +44,7 @@ app.post('/getBoard', gameController.getBoard);
 app.post('/startGame', gameController.startGame);
 app.post('/movePiece', gameController.movePiece);
 app.post('/moveHole', gameController.moveHole);
+app.post('/timeOut', gameController.timeOut);
 app.post('/resetGame', gameController.resetGame);
 
 app.post('/leaveRoom', roomController.leaveRoom);

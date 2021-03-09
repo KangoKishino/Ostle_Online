@@ -61,11 +61,8 @@ module.exports = {
       my_turn: {
         type: Sequelize.STRING,
       },
-      host_time: {
-        type: Sequelize.TIME,
-      },
-      guest_time: {
-        type: Sequelize.TIME,
+      time_out: {
+        type: Sequelize.STRING,
       },
       createdAt: {
         allowNull: false,

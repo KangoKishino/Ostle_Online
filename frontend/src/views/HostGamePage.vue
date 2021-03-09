@@ -18,7 +18,11 @@
             <p v-show="gameInfo.myTurn === 'guest'">相手のターン</p>
           </td>
           <td class="width100">
-            <p>{{ gameInfo.guestTime }}</p>
+            <p>
+              {{ parseInt(guestInterval / 60) | zeroPad }}:{{
+                parseInt(guestInterval % 60) | zeroPad
+              }}
+            </p>
           </td>
         </tr>
         <tr>
@@ -26,7 +30,11 @@
             <p v-show="gameInfo.myTurn === 'host'">あなたのターン</p>
           </td>
           <td class="width100">
-            <p>{{ gameInfo.hostTime }}</p>
+            <p>
+              {{ parseInt(hostInterval / 60) | zeroPad }}:{{
+                parseInt(hostInterval % 60) | zeroPad
+              }}
+            </p>
           </td>
         </tr>
       </table>
@@ -186,13 +194,30 @@
       @close="closeResult()"
       v-show="
         (this.$store.getters.dropedPiece.guest === 2 ||
-          this.$store.getters.dropedPiece.host === 2) &&
+          this.$store.getters.dropedPiece.host === 2 ||
+          this.$store.getters.gameInfo.timeOut) &&
           showResult
       "
     >
       <div class="width300 height150 d-flex align-items-center justify-content-center">
-        <h1 v-show="this.$store.getters.dropedPiece.guest === 2" class="mt-3">勝利</h1>
-        <h1 v-show="this.$store.getters.dropedPiece.host === 2" class="mt-3">敗北</h1>
+        <h1
+          v-if="
+            this.$store.getters.dropedPiece.guest === 2 ||
+              this.$store.getters.gameInfo.timeOut === 'guest'
+          "
+          class="mt-3"
+        >
+          勝利
+        </h1>
+        <h1
+          v-else-if="
+            this.$store.getters.dropedPiece.host === 2 ||
+              this.$store.getters.gameInfo.timeOut === 'host'
+          "
+          class="mt-3"
+        >
+          敗北
+        </h1>
       </div>
     </ModalWindow>
   </div>
@@ -221,6 +246,15 @@ export default {
       oldCoordinates: [],
       nextCoordinates: [],
       showResult: true,
+      gameTime: [180, 300, 420, 5999],
+      hostStart: 300,
+      hostTimer: 0,
+      hostInterval: 300,
+      hostAccum: 300,
+      guestStart: 300,
+      guestTimer: 0,
+      guestInterval: 300,
+      guestAccum: 300,
     };
   },
   created() {
@@ -262,11 +296,17 @@ export default {
       }
     },
     changeTurn(playFirst) {
+      if (this.myRoom.status === 'running') {
+        return;
+      }
       this.$store.dispatch('changeTurn', {
         playFirst: playFirst,
       });
     },
     changeTime(time) {
+      if (this.myRoom.status === 'running') {
+        return;
+      }
       this.$store.dispatch('changeTime', {
         time: time,
       });
@@ -274,6 +314,31 @@ export default {
     startGame() {
       this.$store.dispatch('startGame');
       this.showResult = true;
+    },
+    hostStartTimer() {
+      this.hostStart = Date.now();
+      this.hostTimer = setInterval(() => {
+        this.hostInterval = this.hostAccum - (Date.now() - this.hostStart) * 0.001;
+        if (this.isTimeOut()) {
+          clearInterval(this.hostTimer);
+          clearInterval(this.guestTimer);
+          this.$store.dispatch('timeOut');
+        }
+      }, 10);
+    },
+    hostStopTimer() {
+      this.hostAccum = this.hostInterval;
+      clearInterval(this.hostTimer);
+    },
+    guestStartTimer() {
+      this.guestStart = Date.now();
+      this.guestTimer = setInterval(() => {
+        this.guestInterval = this.guestAccum - (Date.now() - this.guestStart) * 0.001;
+      }, 10);
+    },
+    guestStopTimer() {
+      this.guestAccum = this.guestInterval;
+      clearInterval(this.guestTimer);
     },
     // 移動したマスの判定
     movedPiece(index, row) {
@@ -331,6 +396,8 @@ export default {
     },
     closeResult() {
       this.showResult = false;
+      this.hostStopTimer();
+      this.guestStopTimer();
       this.$store.dispatch('afterStatus');
     },
     restartGame() {
@@ -363,6 +430,12 @@ export default {
     },
     isMyTurn() {
       if (this.myRoom.status === 'running' && this.gameInfo.myTurn === 'host') {
+        return true;
+      }
+      return false;
+    },
+    isTimeOut() {
+      if (this.hostInterval < 0) {
         return true;
       }
       return false;
@@ -437,6 +510,12 @@ export default {
       return false;
     },
   },
+  filters: {
+    zeroPad: (value, num) => {
+      num = typeof num !== 'undefined' ? num : 2;
+      return value.toString().padStart(num, '0');
+    },
+  },
   mounted() {
     this.$store.subscribe(mutation => {
       // 設定変更時の処理
@@ -451,6 +530,16 @@ export default {
       }
       if (mutation.type === 'setGameInfo') {
         this.gameInfo = this.$store.getters.gameInfo;
+        if (this.myRoom.time === 3) {
+          return;
+        }
+        if (this.myRoom.status === 'running' && this.gameInfo.myTurn === 'host') {
+          this.hostStartTimer();
+          this.guestStopTimer();
+        } else if (this.myRoom.status === 'running' && this.gameInfo.myTurn === 'guest') {
+          this.hostStopTimer();
+          this.guestStartTimer();
+        }
       }
     });
     this.socket.on('ENTER_ROOM', () => {
@@ -471,9 +560,30 @@ export default {
           this.$store.dispatch('getRooms');
         });
     });
+    this.socket.on('UPDATE_ROOM', id => {
+      if (id === this.$store.getters.myInfo.id) {
+        this.$store.dispatch('getRooms');
+      }
+    });
     this.socket.on('UPDATE_BOARD', id => {
       if (id === this.$store.getters.myInfo.id) {
         this.$store.dispatch('getBoard');
+      }
+    });
+    this.socket.on('START_GAME', id => {
+      if (id === this.$store.getters.myInfo.id) {
+        this.hostStopTimer();
+        this.guestStopTimer();
+        this.hostInterval = this.gameTime[this.myRoom.time];
+        this.hostAccum = this.gameTime[this.myRoom.time];
+        this.hostStart = this.gameTime[this.myRoom.time];
+        this.guestInterval = this.gameTime[this.myRoom.time];
+        this.guestAccum = this.gameTime[this.myRoom.time];
+        this.guestStart = this.gameTime[this.myRoom.time];
+        this.$store.dispatch('getRooms');
+        this.$store.dispatch('getBoard').then(() => {
+          this.showResult = true;
+        });
       }
     });
   },

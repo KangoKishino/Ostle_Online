@@ -14,8 +14,7 @@ exports.getCoordinates = (id, res) => {
         'new_coordinates',
         'old_coordinates',
         'my_turn',
-        'host_time',
-        'guest_time',
+        'time_out',
         'createdAt',
         'updatedAt',
       ],
@@ -112,6 +111,22 @@ exports.moveHole = async (req, res) => {
   res.status(200).send();
 };
 
+exports.timeOut = async (req, res) => {
+  const jwt = await roomController.auth(req.body.token, res);
+  db.Boards.update(
+    {
+      time_out: req.body.user,
+    },
+    { where: { id: jwt.id } }
+  )
+    .then(() => {
+      res.status(200).send();
+    })
+    .catch(() => {
+      res.status(400).json({ error: 'DB Change Error!' });
+    });
+};
+
 exports.resetGame = async (req, res) => {
   const jwt = await roomController.auth(req.body.token, res);
   db.Boards.update(
@@ -130,6 +145,7 @@ exports.resetGame = async (req, res) => {
       new_coordinates: null,
       old_coordinates: null,
       my_turn: req.body.playFirst,
+      time_out: null,
     },
     { where: { id: jwt.id } }
   )
@@ -164,8 +180,7 @@ function getCoordinates(id, res) {
         'new_coordinates',
         'old_coordinates',
         'my_turn',
-        'host_time',
-        'guest_time',
+        'time_out',
         'createdAt',
         'updatedAt',
       ],

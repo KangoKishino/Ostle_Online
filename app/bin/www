@@ -49,6 +49,10 @@ io.on('connection', socket => {
     console.log('send message!!!');
     io.emit('SEND_MESSAGE');
   });
+  socket.on('START_GAME', id => {
+    console.log('game start!!!');
+    io.emit('START_GAME', id);
+  });
   socket.on('DELETE_ROOM', id => {
     console.log('delete room!!!');
     io.emit('DELETE_ROOM', id);
